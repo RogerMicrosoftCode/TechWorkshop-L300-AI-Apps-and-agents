@@ -1,12 +1,12 @@
-# Scripts de Despliegue de Azure Resources
+# 🚀 Scripts de Despliegue - Tech Workshop L300 AI Apps and Agents
 
-Este directorio contiene scripts de PowerShell para desplegar los recursos de Azure definidos en `DeployAzureResources.bicep` usando Azure CLI.
+Este directorio contiene scripts de PowerShell para desplegar los recursos de Azure usando Azure CLI y Azure Container Apps.
 
-## Estructura de Scripts
+## 📋 Estructura de Scripts
 
-Los scripts están numerados según el orden de dependencias:
+### **Scripts de Infraestructura** (Numerados por dependencias)
 
-1. **00-set-env.ps1** - Configuración de variables de entorno (lee parameters.json)
+1. **00-set-env.ps1** - Configuración de variables de entorno
 2. **01-resource-group.ps1** - Crea el Resource Group
 3. **02-storage-account.ps1** - Crea Storage Account
 4. **03-cosmos-db.ps1** - Crea Cosmos DB Account y Database
@@ -16,8 +16,20 @@ Los scripts están numerados según el orden de dependencias:
 8. **07-ai-services.ps1** - Crea AI Services (Cognitive Services)
 9. **08-ai-search.ps1** - Crea Azure AI Search
 10. **09-role-assignments.ps1** - Asigna roles RBAC
-11. **99-validate.ps1** - Valida que todos los recursos se crearon correctamente
-12. **run-all.ps1** - Script maestro que ejecuta todos en orden
+11. **10-app-service.ps1** - ⚠️ App Service (bloqueado por cuota en MCAPS)
+12. **99-validate.ps1** - Valida que todos los recursos se crearon correctamente
+13. **run-all.ps1** - Script maestro que ejecuta todos en orden
+
+### **Scripts de Build y Deployment**
+
+- **build-in-azure.ps1** ⭐ - Construye imagen Docker en Azure (sin Docker local)
+- **build-and-push-docker.ps1** - Construye localmente y pushea a ACR
+- **deploy-containerapp.ps1** - Despliega Container App con todas las configuraciones
+
+### **Documentación**
+
+- **QUOTA-REQUEST-GUIDE.md** - Guía para solicitar aumento de cuota de App Service
+- **CONTAINERAPP-VS-APPSERVICE.md** - Comparación Container Apps vs App Service
 
 ## Dependencias del Grafo de Recursos
 
