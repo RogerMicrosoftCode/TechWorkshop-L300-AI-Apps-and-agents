@@ -1,0 +1,7 @@
+{
+    "location": "eastus2",
+    "identity": {
+        "type": "SystemAssigned"
+    },
+    "properties": {}
+}

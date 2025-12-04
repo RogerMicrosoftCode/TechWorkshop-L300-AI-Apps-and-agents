@@ -1,0 +1,9 @@
+{
+  "metadata": {
+    "AccountName": "92f7d5c5sa",
+    "ContainerName": "zava"
+  },
+  "target": "/subscriptions/662141d0-0308-4187-b46b-db1e9466b5ac/resourceGroups/techworkshop-l300-ai-agents/providers/Microsoft.Storage/storageAccounts/92f7d5c5sa",
+  "authType": "AAD",
+  "category": "AzureBlob"
+}

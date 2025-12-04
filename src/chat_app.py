@@ -42,7 +42,7 @@ from utils.message_utils import (
 # Agent Imports
 from app.tools.understandImage import get_image_description
 from services.agent_service import get_or_create_agent_processor
-# from app.tools.singleAgentExample import generate_response
+from app.tools.singleAgentExample import generate_response
 # from app.tools.aiSearchTools import product_recommendations
 # from app.tools.imageCreationTool import create_image
 # from app.servers.mcp_inventory_server import mcp as inventory_mcp
@@ -116,13 +116,28 @@ app = FastAPI()
 #set up MCP inventory server as a mounted app
 # inventory_mcp_app = inventory_mcp.sse_app()
 # app.mount("/mcp-inventory/", inventory_mcp_app)
-project_endpoint = os.environ.get("AZURE_AI_AGENT_ENDPOINT")
-if not project_endpoint:
-    raise ValueError("AZURE_AI_AGENT_ENDPOINT environment variable is required")
-project_client = AIProjectClient(
-    endpoint=project_endpoint,
-    credential=DefaultAzureCredential(),
-)
+
+# Initialize project_client only if needed for multi-agent scenarios
+project_client = None
+try:
+    project_endpoint = os.environ.get("AZURE_AI_AGENT_ENDPOINT")
+    if project_endpoint:
+        # Use API key authentication if available, otherwise fall back to DefaultAzureCredential
+        azure_openai_key = os.environ.get("AZURE_OPENAI_KEY")
+        if azure_openai_key:
+            from azure.core.credentials import AzureKeyCredential
+            project_client = AIProjectClient(
+                endpoint=project_endpoint,
+                credential=AzureKeyCredential(azure_openai_key),
+            )
+        else:
+            project_client = AIProjectClient(
+                endpoint=project_endpoint,
+                credential=DefaultAzureCredential(),
+            )
+        logger.info("AIProjectClient initialized successfully")
+except Exception as e:
+    logger.warning(f"Failed to initialize AIProjectClient: {e}. Single-agent mode will work without it.")
 
 # llm_client = AzureOpenAI(
 #     azure_endpoint=validated_env_vars['AZURE_OPENAI_ENDPOINT'],
@@ -165,9 +180,19 @@ async def websocket_endpoint(websocket: WebSocket):
     logger.info("WebSocket Session Started")
     
     await websocket.accept()
-    thread = project_client.agents.threads.create()
+    
+    # Initialize threads only if project_client is available (multi-agent mode)
+    thread = None
+    customer_loyalty_thread = None
+    if project_client:
+        try:
+            thread = project_client.agents.threads.create()
+            customer_loyalty_thread = project_client.agents.threads.create()
+            logger.info("Agent threads created successfully")
+        except Exception as e:
+            logger.warning(f"Failed to create agent threads: {e}. Single-agent mode will work without them.")
+    
     chat_history: Deque[Tuple[str, str]] = deque(maxlen=5)
-    customer_loyalty_thread = project_client.agents.threads.create()
     
     customer_loyalty_executed = False               # Flag to track if customer loyalty task has been executed
     session_discount_percentage = ""                # Session-level variable to track discount_percentage
@@ -245,15 +270,15 @@ async def websocket_endpoint(websocket: WebSocket):
             
             chat_history = parse_conversation_history(conversation_history, chat_history, user_message)
             
-            await websocket.send_text(fast_json_dumps({"answer": "This application is not yet ready to serve results. Please check back later.", "agent": None, "cart": persistent_cart}))
+            # await websocket.send_text(fast_json_dumps({"answer": "This application is not yet ready to serve results. Please check back later.", "agent": None, "cart": persistent_cart}))
 
-            # # Single-agent example
-            # try:
-            #     response = generate_response(user_message)
-            #     await websocket.send_text(fast_json_dumps({"answer": response, "agent": "single", "cart": persistent_cart}))
-            # except Exception as e:
-            #     logger.error("Error during single-agent response generation", exc_info=True)
-            #     await websocket.send_text(fast_json_dumps({"answer": "Error during single-agent response generation", "error": str(e), "cart": persistent_cart}))
+            # Single-agent example
+            try:
+                response = generate_response(user_message)
+                await websocket.send_text(fast_json_dumps({"answer": response, "agent": "single", "cart": persistent_cart}))
+            except Exception as e:
+                logger.error("Error during single-agent response generation", exc_info=True)
+                await websocket.send_text(fast_json_dumps({"answer": "Error during single-agent response generation", "error": str(e), "cart": persistent_cart}))
 
             # # Multi-agent example with MCP inventory server and handoff service
             # # Run customer loyalty task only once when session starts
